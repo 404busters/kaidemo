@@ -114,10 +114,12 @@ gulp.task('watch:css', false, () => {
 
 gulp.task('watch:html', false, () => {
   return gulp.watch([
-    './assets/blob/**/*.*'
+    './assets/html/**/*.html'
   ], ['dev:html']);
 });
 
-gulp.task('watch', 'Monitor and rebuild images and css files.', ['watch:html', 'watch:css']);
-gulp.task('dev', 'Development mode. Starts',['dev:html', 'dev:css', 'server', 'watch']);
-gulp.task('build', 'Build the site.', ['build:css', 'build:html', 'js']);
+gulp.task('watch:blob', false, () => gulp.watch(['./assets/blob/**/*.*'], ['blob']))
+
+gulp.task('watch', 'Monitor and rebuild images and css files.', ['watch:html', 'watch:css', 'watch:blob']);
+gulp.task('dev', 'Development mode. Starts',['dev:html', 'dev:css', 'server', 'blob', 'watch']);
+gulp.task('build', 'Build the site.', ['build:css', 'build:html', 'js', 'blob']);
