@@ -30,7 +30,6 @@ module.exports = {
   resolveLoader: {
     fallback: ['node_modules']
   },
-  postcss: [autoprefixer],
   module: {
     loaders: [
       {
