@@ -1,16 +1,27 @@
 {
   "name": "oshk-kaidemo",
+  "private": true,
   "version": "1.0.0",
-  "description": "kaidemo",
+  "description": "Demo of free HK kai fonts",
   "main": "index.js",
   "repository": {
-    "url": "git@github.com:railsstudent/oshk-kaidemo.git",
+    "url": "git+https://github.com/opensourcehk/kaidemo.git",
     "type": "git"
   },
-  "author": "Connie Leung",
+  "author": "Open Source Hong Kong",
+  "contributors": [
+    {
+      "name": "Connie Leung"
+    },
+    {
+      "name": "Tony Yip",
+      "email": "tony@opensource.hk",
+      "url": "https://tonyhhyip.me"
+    }
+  ],
   "license": "MIT",
   "scripts": {
-    "build": "NODE_ENV=production gulp build",
+    "build": "gulp build",
     "dev": "gulp dev",
     "gulp": "gulp",
     "help": "gulp help",
