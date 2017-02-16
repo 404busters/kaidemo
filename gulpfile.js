@@ -1,11 +1,7 @@
 'use strict';
 
 const gulp = require('gulp-help')(require('gulp'));
-const gutil = require("gulp-util");
 const util = require('gulp-util');
-const rename = require('gulp-rename');
-
-const imagemin = require('gulp-imagemin');
 
 const sass = require('gulp-sass');
 const cleanCss = require('gulp-clean-css');
@@ -18,47 +14,59 @@ const fs = require('fs');
 
 const WebpackDevServer = require('webpack-dev-server');
 
-const {NODE_ENV} = process.env;
-
-gulp.task('image', 'Build imagemin version of ./assets/images/**/* into ./public/images', () => {
-  return gulp.src('./assets/images/**/*.*')
-    .pipe(imagemin())
-    .on('error', util.log)
-    .pipe(gulp.dest('public/images'));
+gulp.task('blob', 'Copy file to public', () => {
+  return gulp.src('./assets/blob/**/*.*')
+    .pipe(gulp.dest('public'));
 });
 
-gulp.task('css', 'Build ./assets/scss/*.scss into ./public', () => {
-  return gulp.src(['./assets/scss/*.scss', './assets/scss/*.css'])
+gulp.task('dev:html', 'Build html page for developement', () => {
+  return gulp.src('./assets/html/**/*.html')
+    .pipe(gulp.dest('public'));
+});
+
+gulp.task('build:html', 'Build html page for production', () => {
+  return gulp.src('./assets/html/**/*.html')
+    .pipe(htmlmin({
+      collapseWhitespace: true,
+      collapseBooleanAttributes: true
+    }))
+    .pipe(gulp.dest('public'));
+});
+
+gulp.task('dev:css', 'Build ./assets/scss/*.scss into ./public for development', () => {
+  return gulp.src('./assets/scss/**/*.scss')
     .pipe(sass())
     .on('error', util.log)
-    .pipe(gulp.dest('public'))
-    .pipe(rename({
-      suffix: '.min'
-    }))
+    .pipe(gulp.dest('public'));
+});
+
+gulp.task('build:css', 'Build scss files into public for production', () => {
+  return gulp.src('./assets/scss/**/*.scss')
+    .pipe(sass())
+    .on('error', util.log)
     .pipe(cleanCss())
     .pipe(gulp.dest('public'));
 });
 
 gulp.task('server', 'Start a webpack-dev-server for the project at http://localhost:8080', () => {
-  const devConfig = merge(config, {
+  const devConfig = merge.smart({
     entry: {
       app: [
         'webpack-dev-server/client?http://localhost:8080/',
-        './assets/js/index.jsx'
       ]
+    },
+    plugins: [
+        new webpack.HotModuleReplacementPlugin()
+    ],
+    module: {
+        loaders: [
+            {test: /\.jsx?/, loaders: ['react-hot']}
+        ]
     }
-  });
+  }, config);
 
   const compiler = webpack(devConfig);
   compiler.plugin('done', (stats) => {
-    util.log('[webpack]', stats.toString({
-      version: true,
-      timings: true,
-      assets: true,
-      chunks: true,
-      chunkModules: true,
-      modules: true
-    }));
     fs.writeFile('./webpack.json', JSON.stringify(stats.toJson('verbose')));
   });
 
@@ -71,7 +79,16 @@ gulp.task('server', 'Start a webpack-dev-server for the project at http://localh
 });
 
 gulp.task('js', 'Build javascripts bundle into ./public/js/app.js', (cb) => {
-  webpack(config, (e, stats) => {
+  const UglifyPlugin = require('webpack/lib/optimize/UglifyJsPlugin');
+  const prodConfig = merge.smart({
+      plugins: [
+        new UglifyPlugin({minimize: true}),
+        new webpack.DefinePlugin({
+          'process.env.NODE_ENV': JSON.stringify('production')
+        })
+      ]
+  }, config);
+  webpack(prodConfig, (e, stats) => {
     if (e) {
       throw new gutil.PluginError('[webpack]', e);
     } else {
@@ -91,19 +108,18 @@ gulp.task('js', 'Build javascripts bundle into ./public/js/app.js', (cb) => {
 
 gulp.task('watch:css', false, () => {
   return gulp.watch([
-    './assets/scss/**/*.scss',
-    './assets/scss/**/*.css'
-  ], ['css']);
+    './assets/scss/**/*.scss'
+  ], ['dev:css']);
 });
 
-gulp.task('watch:image', false, () => {
+gulp.task('watch:html', false, () => {
   return gulp.watch([
-    './assets/images/**/*.*'
-  ], ['image']);
+    './assets/html/**/*.html'
+  ], ['dev:html']);
 });
 
-gulp.task('watch', 'Monitor and rebuild images and css files.',
-  ['watch:image', 'watch:css']);
-gulp.task('build:dev', false, ['js', 'image', 'css', 'server']);
-gulp.task('dev', 'Development mode. Starts',['build:dev', 'watch']);
-gulp.task('build', 'Build the site.', ['image', 'css', 'js']);
+gulp.task('watch:blob', false, () => gulp.watch(['./assets/blob/**/*.*'], ['blob']))
+
+gulp.task('watch', 'Monitor and rebuild images and css files.', ['watch:html', 'watch:css', 'watch:blob']);
+gulp.task('dev', 'Development mode. Starts',['dev:html', 'dev:css', 'server', 'blob', 'watch']);
+gulp.task('build', 'Build the site.', ['build:css', 'build:html', 'js', 'blob']);
